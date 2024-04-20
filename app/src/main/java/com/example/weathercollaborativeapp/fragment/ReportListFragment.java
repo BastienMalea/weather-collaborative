@@ -17,6 +17,7 @@ import com.example.weathercollaborativeapp.adapter.ReportAdapter;
 import com.example.weathercollaborativeapp.model.Report;
 import com.example.weathercollaborativeapp.network.ReportService;
 import com.example.weathercollaborativeapp.network.RetrofitClientInstance;
+import com.google.gson.Gson;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -73,11 +74,19 @@ public class ReportListFragment extends Fragment {
         Log.d("tutu", "Initial fetch with radius: " + radius);
 
         ReportService apiService = RetrofitClientInstance.getRetrofitInstance().create(ReportService.class);
+
+        Log.d("tutu", "getRetrofitinstance");
+
+
         Call<List<Report>> call = apiService.getNearbyReports(latitude, longitude, radius);
+
+        Log.d("tutu", "appelApi");
+
         call.enqueue(new Callback<List<Report>>() {
             @Override
             public void onResponse(Call<List<Report>> call, Response<List<Report>> response) {
                 if (response.isSuccessful()) {
+                    Log.d("tutu", "JSON received: " + new Gson().toJson(response.body()));
                     reportAdapter.updateReports(response.body());
                     Log.d("tutu", "Data fetch success" + response.body());
                 } else {
