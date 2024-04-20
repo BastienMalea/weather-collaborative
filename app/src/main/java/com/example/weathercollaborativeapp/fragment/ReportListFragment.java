@@ -35,10 +35,11 @@ public class ReportListFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState){
         View view = inflater.inflate(R.layout.fragment_report_list, container, false);
-        seekBarRadius = view.findViewById(R.id.seekBarRadius);
         recyclerView = view.findViewById(R.id.recyclerViewReports);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         reportAdapter = new ReportAdapter(new ArrayList<>());
+        recyclerView.setAdapter(reportAdapter);
+        seekBarRadius = view.findViewById(R.id.seekBarRadius);
 
         setupSeekBar();
         return view;
@@ -77,25 +78,14 @@ public class ReportListFragment extends Fragment {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             apiService = RetrofitClientInstance.getRetrofitInstance().create(ReportService.class);
         }
-
-        Log.d("tutu", "getRetrofitinstance");
-
-
         Call<List<Report>> call = apiService.getNearbyReports(latitude, longitude, radius);
-
-        Log.d("tutu", "appelApi");
-
         call.enqueue(new Callback<List<Report>>() {
             @Override
             public void onResponse(Call<List<Report>> call, Response<List<Report>> response) {
                 if (response.isSuccessful()) {
-                    Toast.makeText(getContext(), response.body().get(1).getCreatedAt().toString(), Toast.LENGTH_LONG).show();
-                    Log.d("tutu", "JSON received: " + new Gson().toJson(response.body()));
                     reportAdapter.updateReports(response.body());
-                    Log.d("tutu", "Data fetch success" + response.body());
                 } else {
                     Toast.makeText(getContext(), "Error fetching reports", Toast.LENGTH_LONG).show();
-                    Log.d("tutu", "Data fetch fail" + response.code());
                 }
             }
 
