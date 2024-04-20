@@ -2,39 +2,33 @@ package com.example.weathercollaborativeapp.adapter;
 
 import android.os.Build;
 
-import androidx.annotation.RequiresApi;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
 
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonToken;
-import com.google.gson.stream.JsonWriter;
-
-import java.io.IOException;
+import java.lang.reflect.Type;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.time.ZoneId;
+import java.util.Date;
 
-@RequiresApi(api = Build.VERSION_CODES.O)
-public class LocalDateTimeAdapter extends TypeAdapter<LocalDateTime> {
+public class LocalDateTimeAdapter implements JsonDeserializer<LocalDateTime> {
 
-    private static final DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
-
-
+    private static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss";
     @Override
-    public void write(JsonWriter out, LocalDateTime value) throws IOException {
-        if (value == null) {
-            out.nullValue();
-        } else {
-            out.value(value.format(formatter));
+    public LocalDateTime deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+        String dateString = json.getAsString();
+        try {
+            SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT);
+            Date date = dateFormat.parse(dateString);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                return date != null ? LocalDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault()) : null;
+            }
+        } catch (ParseException e) {
+            throw new JsonParseException("Unable to parse LocalDateTime", e);
         }
-    }
-
-    @Override
-    public LocalDateTime read(JsonReader in) throws IOException {
-        if (in.peek() == JsonToken.NULL) {
-            in.nextNull();
-            return null;
-        }
-        String date = in.nextString();
-        return LocalDateTime.parse(date, formatter);
+        return null;
     }
 }

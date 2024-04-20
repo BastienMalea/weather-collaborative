@@ -3,8 +3,19 @@ package com.example.weathercollaborativeapp.model;
 import java.time.LocalDateTime;
 
 public class Report {
+
+
     private double latitude;
     private double longitude;
+
+    public Report(LocalDateTime createdAt, double latitude, double longitude, double temperature,  WeatherType weatherType) {
+        this.createdAt = createdAt;
+        this.latitude = latitude;
+        this.longitude = longitude;
+        this.temperature = temperature;
+        this.weatherType = weatherType;
+    }
+
     private double temperature;
     private LocalDateTime createdAt;
     private WeatherType weatherType;

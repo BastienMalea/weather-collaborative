@@ -73,7 +73,10 @@ public class ReportListFragment extends Fragment {
     private void fetchReports(double latitude, double longitude, int radius) {
         Log.d("tutu", "Initial fetch with radius: " + radius);
 
-        ReportService apiService = RetrofitClientInstance.getRetrofitInstance().create(ReportService.class);
+        ReportService apiService = null;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            apiService = RetrofitClientInstance.getRetrofitInstance().create(ReportService.class);
+        }
 
         Log.d("tutu", "getRetrofitinstance");
 
@@ -86,6 +89,7 @@ public class ReportListFragment extends Fragment {
             @Override
             public void onResponse(Call<List<Report>> call, Response<List<Report>> response) {
                 if (response.isSuccessful()) {
+                    Toast.makeText(getContext(), response.body().get(1).getCreatedAt().toString(), Toast.LENGTH_LONG).show();
                     Log.d("tutu", "JSON received: " + new Gson().toJson(response.body()));
                     reportAdapter.updateReports(response.body());
                     Log.d("tutu", "Data fetch success" + response.body());
