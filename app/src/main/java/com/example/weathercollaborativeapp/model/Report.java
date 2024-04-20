@@ -1,5 +1,7 @@
 package com.example.weathercollaborativeapp.model;
 
+import com.example.weathercollaborativeapp.utils.LocationUtils;
+
 import java.time.LocalDateTime;
 
 public class Report {
@@ -8,7 +10,17 @@ public class Report {
     private double latitude;
     private double longitude;
 
-    public Report(LocalDateTime createdAt, double latitude, double longitude, double temperature,  WeatherType weatherType) {
+    private double distanceFromUser;
+
+    public double getDistanceFromUser() {
+        return distanceFromUser;
+    }
+
+    public void setDistanceFromUser(double distanceFromUser) {
+        this.distanceFromUser = distanceFromUser;
+    }
+
+    public Report(LocalDateTime createdAt, double latitude, double longitude, double temperature, WeatherType weatherType) {
         this.createdAt = createdAt;
         this.latitude = latitude;
         this.longitude = longitude;
@@ -58,5 +70,9 @@ public class Report {
 
     public void setWeatherType(WeatherType weatherType) {
         this.weatherType = weatherType;
+    }
+
+    public void updateDistanceFrom(double userLat, double userLon) {
+        this.distanceFromUser = LocationUtils.calculateDistance(userLat, userLon, this.latitude, this.longitude);
     }
 }

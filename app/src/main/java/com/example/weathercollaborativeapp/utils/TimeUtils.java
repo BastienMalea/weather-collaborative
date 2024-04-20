@@ -1,12 +1,10 @@
 package com.example.weathercollaborativeapp.utils;
 
 import android.os.Build;
-import android.text.format.DateUtils;
 
 import androidx.annotation.RequiresApi;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 
 public class TimeUtils {
@@ -19,13 +17,13 @@ public class TimeUtils {
         long days = ChronoUnit.DAYS.between(createdAt, now);
 
         if (seconds < 60) {
-            return "Posté il y a " + seconds + " secondes";
+            return "Il y a " + seconds + " s";
         } else if (minutes < 60) {
-            return "Posté il y a " + minutes + " minutes";
+            return "Il y a " + minutes + " min";
         } else if (hours < 24) {
-            return "Posté il y a " + hours + " heures " + (minutes % 60) + " minutes";
+            return "Il y a " + hours + " H " + (minutes % 60) + " min";
         } else {
-            return "Posté il y a " + days + " jours";
+            return "Il y a" + days + " j";
         }
     }
 }

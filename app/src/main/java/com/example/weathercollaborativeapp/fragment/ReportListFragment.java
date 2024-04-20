@@ -6,6 +6,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.SeekBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.fragment.app.Fragment;
@@ -28,9 +29,13 @@ import retrofit2.Response;
 
 public class ReportListFragment extends Fragment {
 
+    double latitude = 45.76;
+    double longitude = 3.05;
     private SeekBar seekBarRadius;
     private RecyclerView recyclerView;
     private ReportAdapter reportAdapter;
+
+    private TextView textViewRadius;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState){
@@ -40,6 +45,7 @@ public class ReportListFragment extends Fragment {
         reportAdapter = new ReportAdapter(new ArrayList<>());
         recyclerView.setAdapter(reportAdapter);
         seekBarRadius = view.findViewById(R.id.seekBarRadius);
+        textViewRadius = view.findViewById(R.id.textViewRadius);
 
         setupSeekBar();
         return view;
@@ -47,8 +53,7 @@ public class ReportListFragment extends Fragment {
 
     private void setupSeekBar() {
 
-        double latitude = 45.76;
-        double longitude = 3.05;
+
 
         seekBarRadius.setMax(99);
         seekBarRadius.setProgress(50);
@@ -60,6 +65,7 @@ public class ReportListFragment extends Fragment {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 if(fromUser){
+                    textViewRadius.setText("Rayon:" + progress + " km" );
                     fetchReports(latitude, longitude, progress + 1);
                 }
             }
@@ -83,6 +89,13 @@ public class ReportListFragment extends Fragment {
             @Override
             public void onResponse(Call<List<Report>> call, Response<List<Report>> response) {
                 if (response.isSuccessful()) {
+
+                    List<Report> reports = response.body();
+
+                    for (Report report : reports) {
+                        report.updateDistanceFrom(latitude, longitude);
+                    }
+
                     reportAdapter.updateReports(response.body());
                 } else {
                     Toast.makeText(getContext(), "Error fetching reports", Toast.LENGTH_LONG).show();

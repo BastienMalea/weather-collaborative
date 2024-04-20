@@ -37,7 +37,9 @@ public class ReportAdapter extends RecyclerView.Adapter<ReportAdapter.ReportView
     @Override
     public void onBindViewHolder(@NonNull ReportViewHolder holder, int position) {
         Report report = reportList.get(position);
-        holder.bind(report);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            holder.bind(report);
+        }
     }
 
     @Override
@@ -57,12 +59,16 @@ public class ReportAdapter extends RecyclerView.Adapter<ReportAdapter.ReportView
         private TextView textViewWeatherType;
         private TextView textViewRelativeTime;
 
+        private TextView textViewDistance;
+
         ReportViewHolder(View itemView){
             super(itemView);
             imageViewIcon = itemView.findViewById(R.id.imageViewIcon);
             textViewTemperature = itemView.findViewById(R.id.textViewTemperature);
             textViewWeatherType = itemView.findViewById(R.id.textViewWeatherType);
             textViewRelativeTime = itemView.findViewById(R.id.textViewRelativeTime);
+            textViewDistance = itemView.findViewById(R.id.textViewDistance);
+
         }
 
         @RequiresApi(api = Build.VERSION_CODES.O)
@@ -71,6 +77,9 @@ public class ReportAdapter extends RecyclerView.Adapter<ReportAdapter.ReportView
             textViewWeatherType.setText(report.getWeatherType().getName());
             imageViewIcon.setImageResource(report.getWeatherType().getIconResourceId());
             textViewRelativeTime.setText(TimeUtils.getRelativeTime(report.getCreatedAt()));
+
+            String distanceText = String.format(Locale.getDefault(), "%.2f km", report.getDistanceFromUser());
+            textViewDistance.setText(distanceText);
         }
     }
 }
