@@ -10,7 +10,10 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -19,6 +22,8 @@ import com.example.weathercollaborativeapp.adapter.ReportAdapter;
 import com.example.weathercollaborativeapp.model.Report;
 import com.example.weathercollaborativeapp.network.ReportService;
 import com.example.weathercollaborativeapp.network.RetrofitClientInstance;
+import com.example.weathercollaborativeapp.viewmodel.LocationViewModel;
+import com.google.android.gms.maps.model.LatLng;
 import com.google.gson.Gson;
 
 import java.util.ArrayList;
@@ -30,14 +35,20 @@ import retrofit2.Response;
 
 public class ReportListFragment extends Fragment {
 
-    double latitude = 45.76;
-    double longitude = 3.05;
+    double latitude;
+    double longitude;
     private SeekBar seekBarRadius;
     private RecyclerView recyclerView;
     private ReportAdapter reportAdapter;
     private TextView textViewRadius;
-
     private Button buttonSort;
+    private LocationViewModel locationViewModel;
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        locationViewModel = new ViewModelProvider(requireActivity()).get(LocationViewModel.class);
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState){
@@ -49,10 +60,26 @@ public class ReportListFragment extends Fragment {
         seekBarRadius = view.findViewById(R.id.seekBarRadius);
         textViewRadius = view.findViewById(R.id.textViewRadius);
         buttonSort = view.findViewById(R.id.buttonSort);
-        setupButtonSort();
 
+        setupButtonSort();
         setupSeekBar();
+
+        locationViewModel.getUserLocation().observe(getViewLifecycleOwner(), newLocation -> {
+            latitude = newLocation.latitude;
+            longitude = newLocation.longitude;
+            Log.d("tutu", "Nouvelle localisation reçue: " + latitude + " longitude : " + longitude);
+            fetchReports(latitude, longitude, seekBarRadius.getProgress() + 1);
+        });
+
+
         return view;
+    }
+
+    private void updateLocation(LatLng location) {
+        if (location != null) {
+            latitude = location.latitude;
+            longitude = location.longitude;
+        }
     }
 
     private void setupButtonSort() {
@@ -68,14 +95,8 @@ public class ReportListFragment extends Fragment {
     }
 
     private void setupSeekBar() {
-
-
-
         seekBarRadius.setMax(99);
         seekBarRadius.setProgress(50);
-
-        int initialRadius = seekBarRadius.getProgress() + 1;
-        fetchReports(latitude, longitude, initialRadius);
         seekBarRadius.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
 
             @Override
@@ -87,14 +108,12 @@ public class ReportListFragment extends Fragment {
             }
             @Override
             public void onStartTrackingTouch(SeekBar seekBar) {}
-
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {}
         });
     }
 
     private void fetchReports(double latitude, double longitude, int radius) {
-        Log.d("tutu", "Initial fetch with radius: " + radius);
 
         ReportService apiService = null;
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
@@ -107,6 +126,8 @@ public class ReportListFragment extends Fragment {
                 if (response.isSuccessful()) {
 
                     List<Report> reports = response.body();
+
+                    Log.d("tutu", "ReportList size :" + reports.size());
 
                     for (Report report : reports) {
                         report.updateDistanceFrom(latitude, longitude);

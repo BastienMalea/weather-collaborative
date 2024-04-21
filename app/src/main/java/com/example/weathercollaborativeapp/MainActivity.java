@@ -1,10 +1,15 @@
 package com.example.weathercollaborativeapp;
 
+import static androidx.core.content.ContentProviderCompat.requireContext;
+import static com.google.android.material.internal.ContextUtils.getActivity;
+
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
+
+import android.util.Log;
 import android.widget.Toast;
 import android.Manifest;
 
@@ -16,9 +21,14 @@ import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+
+import androidx.lifecycle.ViewModelProvider;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.example.weathercollaborativeapp.adapter.ViewPagerAdapter;
+import com.example.weathercollaborativeapp.viewmodel.LocationViewModel;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 
@@ -46,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         checkAndRequestPermissions();
+        fetchLocation();
 
         ViewPager2 viewPager = findViewById(R.id.viewPager);
         viewPager.setAdapter(new ViewPagerAdapter(this));
@@ -54,6 +65,26 @@ public class MainActivity extends AppCompatActivity {
         new TabLayoutMediator(tabLayout, viewPager,
                 (tab, position) -> tab.setText(position == 0 ? "Liste" : "Carte")
         ).attach();
+    }
+
+    private void fetchLocation() {
+        FusedLocationProviderClient locationClient = LocationServices.getFusedLocationProviderClient(this);
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            locationClient.getLastLocation()
+                    .addOnSuccessListener(location -> {
+                        if (location != null) {
+                            LocationViewModel locationViewModel = new ViewModelProvider(this).get(LocationViewModel.class);
+                            locationViewModel.setUserLocation(location.getLatitude(), location.getLongitude());
+                        } else {
+                            Log.e("Location", "Location is null");
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e("Location", "Failed to get location", e);
+                    });
+        } else {
+            Log.e("Location", "Permission not granted");
+        }
     }
 
     @Override
