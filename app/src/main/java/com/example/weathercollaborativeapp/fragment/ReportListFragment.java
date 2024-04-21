@@ -74,14 +74,6 @@ public class ReportListFragment extends Fragment {
 
         return view;
     }
-
-    private void updateLocation(LatLng location) {
-        if (location != null) {
-            latitude = location.latitude;
-            longitude = location.longitude;
-        }
-    }
-
     private void setupButtonSort() {
         buttonSort.setOnClickListener(new View.OnClickListener(){
 
