@@ -5,6 +5,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -34,8 +35,9 @@ public class ReportListFragment extends Fragment {
     private SeekBar seekBarRadius;
     private RecyclerView recyclerView;
     private ReportAdapter reportAdapter;
-
     private TextView textViewRadius;
+
+    private Button buttonSort;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState){
@@ -46,9 +48,23 @@ public class ReportListFragment extends Fragment {
         recyclerView.setAdapter(reportAdapter);
         seekBarRadius = view.findViewById(R.id.seekBarRadius);
         textViewRadius = view.findViewById(R.id.textViewRadius);
+        buttonSort = view.findViewById(R.id.buttonSort);
+        setupButtonSort();
 
         setupSeekBar();
         return view;
+    }
+
+    private void setupButtonSort() {
+        buttonSort.setOnClickListener(new View.OnClickListener(){
+
+            @Override
+            public void onClick(View v) {
+                if(reportAdapter != null){
+                    reportAdapter.reverseData();
+                }
+            }
+        });
     }
 
     private void setupSeekBar() {

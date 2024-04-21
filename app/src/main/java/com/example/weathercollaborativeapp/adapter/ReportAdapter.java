@@ -1,6 +1,7 @@
 package com.example.weathercollaborativeapp.adapter;
 
 import android.os.Build;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,12 +17,14 @@ import com.example.weathercollaborativeapp.R;
 import com.example.weathercollaborativeapp.model.Report;
 import com.example.weathercollaborativeapp.utils.TimeUtils;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
 public class ReportAdapter extends RecyclerView.Adapter<ReportAdapter.ReportViewHolder> {
 
     private List<Report> reportList;
+    private boolean isReversed = false;
 
     public ReportAdapter(List<Report> reportList) {
         this.reportList = reportList;
@@ -48,8 +51,18 @@ public class ReportAdapter extends RecyclerView.Adapter<ReportAdapter.ReportView
     }
 
     public void updateReports(List<Report> newReports) {
+        Log.d("tutu", "isReversed : " + isReversed);
+        if(isReversed){
+            Collections.reverse(newReports);
+        }
         reportList.clear();
         reportList.addAll(newReports);
+        notifyDataSetChanged();
+    }
+
+    public void reverseData() {
+        Collections.reverse(reportList);
+        isReversed = !isReversed;
         notifyDataSetChanged();
     }
 
