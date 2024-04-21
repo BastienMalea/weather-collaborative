@@ -1,6 +1,8 @@
 package com.example.weathercollaborativeapp.fragment;
 
+import android.content.res.Resources;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,6 +19,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 public class WeatherMapFragment extends Fragment implements OnMapReadyCallback {
@@ -56,9 +59,24 @@ public class WeatherMapFragment extends Fragment implements OnMapReadyCallback {
 
     @Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
+
+        try{
+            boolean success = googleMap.setMapStyle(
+                    MapStyleOptions.loadRawResourceStyle(
+                            getContext(), R.raw.map_style)
+            );
+
+            if (!success) {
+                Log.d("tutu", "Style parsing failed.");
+            }
+        }catch (Resources.NotFoundException e){
+            Log.d("tutu", "Can't find style. Error: ", e);
+        }
+
+
         LatLng location = new LatLng(latitude, longitude);
         googleMap.addMarker(new MarkerOptions().position(location).title("Clermont-Ferrand"));
-        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(location, 12));
+        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(location, 13));
 
         googleMap.getUiSettings().setAllGesturesEnabled(false);
         googleMap.getUiSettings().setZoomGesturesEnabled(false);

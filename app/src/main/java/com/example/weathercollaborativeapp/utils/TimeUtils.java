@@ -17,8 +17,6 @@ public class TimeUtils {
         long minutes = ChronoUnit.MINUTES.between(createdAt, now);
         long hours = ChronoUnit.HOURS.between(createdAt, now);
         long days = ChronoUnit.DAYS.between(createdAt, now);
-        Log.d("tutu", "Created At : " + createdAt);
-        Log.d("tutu", "Seconde " + seconds + " minute : " + minutes + " Heures " + hours + " days : " + days);
         if (seconds < 60) {
             return "Il y a " + seconds + " s";
         } else if (minutes < 60) {

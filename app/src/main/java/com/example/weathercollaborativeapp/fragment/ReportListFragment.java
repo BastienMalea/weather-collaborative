@@ -126,9 +126,6 @@ public class ReportListFragment extends Fragment {
                 if (response.isSuccessful()) {
 
                     List<Report> reports = response.body();
-
-                    Log.d("tutu", "ReportList size :" + reports.size());
-
                     for (Report report : reports) {
                         report.updateDistanceFrom(latitude, longitude);
                     }
