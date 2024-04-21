@@ -1,13 +1,18 @@
 package com.example.weathercollaborativeapp;
 
-import android.app.Activity;
-import android.os.Build;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Bundle;
-import android.util.Log;
+import android.provider.Settings;
+import android.widget.Toast;
+import android.Manifest;
 
 import androidx.activity.EdgeToEdge;
-import androidx.annotation.RequiresApi;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -16,20 +21,10 @@ import androidx.viewpager2.widget.ViewPager2;
 import com.example.weathercollaborativeapp.adapter.ViewPagerAdapter;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-
-import java.lang.reflect.Type;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
-import java.time.temporal.ChronoField;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final int PERMISSION_REQUEST_ACCESS_FINE_LOCATION = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,6 +41,12 @@ public class MainActivity extends AppCompatActivity {
         if (getSupportActionBar() != null)
             getSupportActionBar().hide();
 
+        if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, PERMISSION_REQUEST_ACCESS_FINE_LOCATION);
+        }
+
+        checkAndRequestPermissions();
+
         ViewPager2 viewPager = findViewById(R.id.viewPager);
         viewPager.setAdapter(new ViewPagerAdapter(this));
 
@@ -54,11 +55,40 @@ public class MainActivity extends AppCompatActivity {
                 (tab, position) -> tab.setText(position == 0 ? "Liste" : "Carte")
         ).attach();
     }
-    public static void checkAndRequestPermissions(Activity activity) {
-//        if (ContextCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-//            ActivityCompat.requestPermissions(activity, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
-//        } else {
-//            // Permission déjà accordée, continuer avec la fonctionnalité
-//        }
+
+    @Override
+    protected void onResume(){
+        super.onResume();
+        checkAndRequestPermissions();
     }
+
+    private void checkAndRequestPermissions() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
+                Toast.makeText(this, "Cette permission est nécessaire pour localiser votre position sur la carte.", Toast.LENGTH_LONG).show();
+            }
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, PERMISSION_REQUEST_ACCESS_FINE_LOCATION);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == PERMISSION_REQUEST_ACCESS_FINE_LOCATION) {
+            if (!(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
+                if (!ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
+                    Toast.makeText(this, "Vous devez activer les permissions dans les paramètres de l'app.", Toast.LENGTH_LONG).show();
+                    openAppSettings();
+                }
+            }
+        }
+    }
+
+    private void openAppSettings() {
+        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", getPackageName(), null));
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
+    }
+
+
 }
