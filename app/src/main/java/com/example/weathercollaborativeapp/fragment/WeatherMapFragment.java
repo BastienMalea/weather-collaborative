@@ -1,5 +1,6 @@
 package com.example.weathercollaborativeapp.fragment;
 
+import android.app.AlertDialog;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -9,18 +10,27 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.weathercollaborativeapp.R;
+import com.example.weathercollaborativeapp.adapter.WeatherTypeAdapter;
 import com.example.weathercollaborativeapp.model.Report;
 import com.example.weathercollaborativeapp.model.WeatherType;
 import com.example.weathercollaborativeapp.network.ReportService;
 import com.example.weathercollaborativeapp.network.RetrofitClientInstance;
+import com.example.weathercollaborativeapp.network.WeatherService;
+import com.example.weathercollaborativeapp.utils.WeatherIconUtils;
 import com.example.weathercollaborativeapp.viewmodel.LocationViewModel;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -47,6 +57,7 @@ public class WeatherMapFragment extends Fragment implements OnMapReadyCallback {
     double longitude;
     List<Report> reports = new ArrayList<>();
     private boolean isMapReady = false;
+    private Button addButton;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -70,7 +81,58 @@ public class WeatherMapFragment extends Fragment implements OnMapReadyCallback {
             setMarkersOnMap(latitude, longitude, 100);
         });
 
+        addButton = view.findViewById(R.id.add_marker_button);
+        addButton.setOnClickListener(v -> fetchAndDisplayWeatherTypes());
+
         return view;
+    }
+
+    private void fetchAndDisplayWeatherTypes() {
+        WeatherService service = null;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            service = RetrofitClientInstance.getRetrofitInstance().create(WeatherService.class);
+        }
+        if(service == null) return;
+
+        Call<List<WeatherType>> call = service.getWeatherTypes();
+        call.enqueue(new Callback<List<WeatherType>>() {
+            @Override
+            public void onResponse(Call<List<WeatherType>> call, Response<List<WeatherType>> response) {
+                if (response.isSuccessful()) {
+                    List<WeatherType> weatherTypes = response.body();
+                    showWeatherTypesPopup(weatherTypes);
+                } else {
+                    Log.e("tutu", "Error fetching weather types");
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<WeatherType>> call, Throwable t) {
+                Log.e("tutu", "Network error while fetching weather types", t);
+            }
+        });
+    }
+
+    private void showWeatherTypesPopup(List<WeatherType> weatherTypes) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        LayoutInflater inflater = requireActivity().getLayoutInflater();
+        View popupView = inflater.inflate(R.layout.dialog_add_marker, null);
+        builder.setView(popupView);
+
+        RecyclerView recyclerView = popupView.findViewById(R.id.recyclerViewWeatherType);
+        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        recyclerView.setAdapter(new WeatherTypeAdapter(weatherTypes, getContext()));
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+    private void addMarkerAtUserLocation(String pseudo, String selectedWeatherIcon) {
+        LatLng userPosition = new LatLng(latitude, longitude);
+        googleMap.addMarker(new MarkerOptions()
+                .position(userPosition)
+                .title(pseudo)
+                .icon(BitmapDescriptorFactory.fromResource(getIconResourceId(selectedWeatherIcon))));
     }
 
     private void setMarkersOnMap(double latitude, double longitude, int radius) {
@@ -136,13 +198,13 @@ public class WeatherMapFragment extends Fragment implements OnMapReadyCallback {
         LatLng location = new LatLng(latitude, longitude);
         googleMap.addMarker(new MarkerOptions().position(location).title("Clermont-Ferrand"));
         googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(location, 11));
-
         googleMap.getUiSettings().setAllGesturesEnabled(false);
         googleMap.getUiSettings().setZoomGesturesEnabled(false);
 
         if (reports != null){
             addMarkers(reports);
         }
+
 
     }
 
@@ -161,9 +223,7 @@ public class WeatherMapFragment extends Fragment implements OnMapReadyCallback {
     }
 
     private int getIconResourceId(String icon) {
-        WeatherType weatherType = new WeatherType();
-        weatherType.setIcon(icon);
-        return weatherType.getIconResourceId();
+        return WeatherIconUtils.getIconResourceId(icon);
     }
 
     private BitmapDescriptor resizeMapIcons(String iconName, int width, int height){

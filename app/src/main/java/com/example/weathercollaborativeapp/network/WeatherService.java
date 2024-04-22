@@ -9,5 +9,5 @@ import retrofit2.http.GET;
 
 public interface WeatherService {
     @GET("weatherTypes")
-    Call<List<WeatherType>> listWeatherTypes();
+    Call<List<WeatherType>> getWeatherTypes();
 }

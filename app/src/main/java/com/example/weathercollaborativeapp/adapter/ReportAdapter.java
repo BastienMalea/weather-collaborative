@@ -16,6 +16,7 @@ import com.bumptech.glide.Glide;
 import com.example.weathercollaborativeapp.R;
 import com.example.weathercollaborativeapp.model.Report;
 import com.example.weathercollaborativeapp.utils.TimeUtils;
+import com.example.weathercollaborativeapp.utils.WeatherIconUtils;
 
 import java.util.Collections;
 import java.util.List;
@@ -88,7 +89,7 @@ public class ReportAdapter extends RecyclerView.Adapter<ReportAdapter.ReportView
         void bind(Report report){
             textViewTemperature.setText(String.format(Locale.getDefault(), "%.1f°C", report.getTemperature()));
             textViewWeatherType.setText(report.getWeatherType().getName());
-            imageViewIcon.setImageResource(report.getWeatherType().getIconResourceId());
+            imageViewIcon.setImageResource(WeatherIconUtils.getIconResourceId(report.getWeatherType().getIcon()));
             textViewRelativeTime.setText(TimeUtils.getRelativeTime(report.getCreatedAt()));
 
             String distanceText = String.format(Locale.getDefault(), "%.2f km", report.getDistanceFromUser());

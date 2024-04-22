@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="weather_icons">
+        <item>soleil_icon</item>
+        <item>nuage_icon</item>
+        <item>pluie_icon</item>
+        <item>eclaircies_icon</item>
+        <item>couvert_icon</item>
+        <item>brouillard_icon</item>
+        <item>averses_icon</item>
+        <item>neige_icon</item>
+    </string-array>
+</resources>
