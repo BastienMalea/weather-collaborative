@@ -19,9 +19,14 @@ import java.util.List;
 
 public class WeatherTypeAdapter extends RecyclerView.Adapter<WeatherTypeAdapter.ViewHolder> {
 
+    public interface WeatherTypeSelectionListener {
+        void onWeatherTypeSelected(boolean isSelected);
+    }
+
     private List<WeatherType> weatherTypeList;
     private LayoutInflater inflater;
-
+    private int selectedPosition = -1;
+    private WeatherTypeSelectionListener selectionListener;
     public WeatherTypeAdapter(List<WeatherType> weatherTypes, Context context){
         this.weatherTypeList = weatherTypes;
         this.inflater = LayoutInflater.from(context);
@@ -39,11 +44,36 @@ public class WeatherTypeAdapter extends RecyclerView.Adapter<WeatherTypeAdapter.
         WeatherType weatherType = weatherTypeList.get(position);
         holder.weatherName.setText(weatherType.getName());
         holder.weatherIcon.setImageResource(WeatherIconUtils.getIconResourceId(weatherType.getIcon()));
-    }
+        holder.itemView.setSelected(position == selectedPosition);
+        holder.itemView.setOnClickListener(v -> {
+            selectedPosition = holder.getAdapterPosition();
+            notifyDataSetChanged();
+        });
 
+        holder.itemView.setOnClickListener(v -> {
+            notifyItemChanged(selectedPosition);
+            selectedPosition = holder.getAdapterPosition();
+            notifyItemChanged(selectedPosition);
+            if(selectionListener != null){
+                selectionListener.onWeatherTypeSelected(true);
+            }
+        });
+
+    }
     @Override
     public int getItemCount() {
         return weatherTypeList.size();
+    }
+
+    public WeatherType getSelectedWeatherType(){
+        if(selectedPosition != -1){
+            return weatherTypeList.get(selectedPosition);
+        }
+        return null;
+    }
+
+    public void setWeatherTypeSelectionListener(WeatherTypeSelectionListener listener) {
+        this.selectionListener = listener;
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {

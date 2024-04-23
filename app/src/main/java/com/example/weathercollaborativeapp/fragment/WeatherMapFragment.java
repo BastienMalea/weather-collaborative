@@ -13,6 +13,7 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.NumberPicker;
 import android.widget.Spinner;
 import android.widget.Toast;
 
@@ -42,6 +43,8 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -88,6 +91,7 @@ public class WeatherMapFragment extends Fragment implements OnMapReadyCallback {
     }
 
     private void fetchAndDisplayWeatherTypes() {
+        Log.d("tutu", "Click sur le boutond ajout ");
         WeatherService service = null;
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             service = RetrofitClientInstance.getRetrofitInstance().create(WeatherService.class);
@@ -99,6 +103,8 @@ public class WeatherMapFragment extends Fragment implements OnMapReadyCallback {
             @Override
             public void onResponse(Call<List<WeatherType>> call, Response<List<WeatherType>> response) {
                 if (response.isSuccessful()) {
+                    Log.d("tutu", "Recupere la liste des weatherType");
+
                     List<WeatherType> weatherTypes = response.body();
                     showWeatherTypesPopup(weatherTypes);
                 } else {
@@ -118,23 +124,101 @@ public class WeatherMapFragment extends Fragment implements OnMapReadyCallback {
         LayoutInflater inflater = requireActivity().getLayoutInflater();
         View popupView = inflater.inflate(R.layout.dialog_add_marker, null);
         builder.setView(popupView);
+        EditText editTextPseudo = popupView.findViewById(R.id.pseudoInput);
+
+        NumberPicker numberPickerTemperature = popupView.findViewById(R.id.numberPickerTemperature);
+
+        final int minValue = -50;
+        final int maxValue = 50;
+
+        numberPickerTemperature.setMinValue(0);
+        numberPickerTemperature.setMaxValue(maxValue - minValue);
+        numberPickerTemperature.setValue(20 - minValue);
+        numberPickerTemperature.setFormatter(new NumberPicker.Formatter() {
+            @Override
+            public String format(int index) {
+                return Integer.toString(index + minValue);
+            }
+        });
+
 
         RecyclerView recyclerView = popupView.findViewById(R.id.recyclerViewWeatherType);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        recyclerView.setAdapter(new WeatherTypeAdapter(weatherTypes, getContext()));
+        WeatherTypeAdapter adapter = new WeatherTypeAdapter(weatherTypes, getContext());
+        recyclerView.setAdapter(adapter);
+
+        builder.setPositiveButton("Ajouter", null); // Set OnClickListener to null initially
+        builder.setNegativeButton("Annuler", (dialog, id) -> dialog.dismiss());
 
         AlertDialog dialog = builder.create();
+        dialog.setOnShowListener(dialogInterface -> {
+            Button addButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            addButton.setEnabled(false);
+            addButton.setOnClickListener(v -> {
+                WeatherType selectedType = adapter.getSelectedWeatherType();
+                String pseudo = editTextPseudo.getText().toString();
+                int temperature = numberPickerTemperature.getValue() + minValue;
+                addMarker(selectedType, pseudo, temperature);
+                dialog.dismiss();
+            });
+
+            adapter.setWeatherTypeSelectionListener(isSelected -> {
+                addButton.setEnabled(isSelected);
+            });
+        });
+
         dialog.show();
     }
 
-    private void addMarkerAtUserLocation(String pseudo, String selectedWeatherIcon) {
-        LatLng userPosition = new LatLng(latitude, longitude);
-        googleMap.addMarker(new MarkerOptions()
-                .position(userPosition)
-                .title(pseudo)
-                .icon(BitmapDescriptorFactory.fromResource(getIconResourceId(selectedWeatherIcon))));
+    private void addMarker(WeatherType selectedType, String pseudo, int temperature) {
+        if (googleMap != null && selectedType != null) {
+            LatLng location = new LatLng(latitude, longitude);
+            googleMap.addMarker(new MarkerOptions()
+                    .position(location)
+                    .icon(BitmapDescriptorFactory.fromResource(WeatherIconUtils.getIconResourceId(selectedType.getIcon()))));
+
+            Report report = null;
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                report = new Report(latitude, longitude, temperature, pseudo, selectedType);
+            }
+
+            postReportToAPI(report);
+            Log.d("tutu", "Temperature" + report.getTemperature());
+            Log.d("tutu", "WeatherType" + report.getWeatherType().getName());
+            Log.d("tutu", "Pseudo" + report.getUsername());
+        }
     }
 
+    private void postReportToAPI(Report report) {
+        ReportService service = null;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            service = RetrofitClientInstance.getRetrofitInstance().create(ReportService.class);
+        }
+        Call<Report> call = service.postReport(report);
+        call.enqueue(new Callback<Report>() {
+            @Override
+            public void onResponse(Call<Report> call, Response<Report> response) {
+                if (response.isSuccessful()) {
+                    Toast.makeText(getContext(), "Report ajouté avec succès", Toast.LENGTH_SHORT).show();
+                } else {
+                    Log.e("tutu", "Failed with response code: " + response.code());
+                    String errorBody = null;
+                    try {
+                        errorBody = response.errorBody().string();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                    Log.d("tutu", "ERROR BODY: " + errorBody);
+                    Toast.makeText(getContext(), "Échec de l'ajout du report: " + errorBody, Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Report> call, Throwable t) {
+                Toast.makeText(getContext(), "Erreur réseau", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
     private void setMarkersOnMap(double latitude, double longitude, int radius) {
         Log.d("tutu", "Passage setMarkersonMap : " + latitude + longitude);
         ReportService apiService = null;

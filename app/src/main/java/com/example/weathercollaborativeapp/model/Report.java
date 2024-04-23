@@ -5,26 +5,21 @@ import com.example.weathercollaborativeapp.utils.LocationUtils;
 import java.time.LocalDateTime;
 
 public class Report {
-
-
     private double latitude;
     private double longitude;
-
+    private String username;
     private double distanceFromUser;
-
     public double getDistanceFromUser() {
         return distanceFromUser;
     }
-
     public void setDistanceFromUser(double distanceFromUser) {
         this.distanceFromUser = distanceFromUser;
     }
-
-    public Report(LocalDateTime createdAt, double latitude, double longitude, double temperature, WeatherType weatherType) {
-        this.createdAt = createdAt;
+    public Report(double latitude, double longitude, double temperature, String username, WeatherType weatherType) {
         this.latitude = latitude;
         this.longitude = longitude;
         this.temperature = temperature;
+        this.username = username;
         this.weatherType = weatherType;
     }
 
@@ -55,6 +50,10 @@ public class Report {
     public void setTemperature(double temperature) {
         this.temperature = temperature;
     }
+
+    public String getUsername() { return username; }
+
+    public void setUsername(String username) { this.username = username; }
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
