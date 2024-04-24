@@ -281,16 +281,17 @@ public class WeatherMapFragment extends Fragment implements OnMapReadyCallback {
         }
     }
 
-    private Map<Marker, LatLng> markers = new HashMap<>();
+    private Map<Marker, Report> markers = new HashMap<>();
 
     private void addMarker(Report report) {
         if (googleMap != null && report.getWeatherType() != null) {
             LatLng newPosition = new LatLng(report.getLatitude(), report.getLongitude());
             Marker markerToRemove = null;
 
-            for(Map.Entry<Marker, LatLng> entry : markers.entrySet()){
+            for(Map.Entry<Marker, Report> entry : markers.entrySet()){
                 Marker existingMarker = entry.getKey();
-                LatLng existingPosition = entry.getValue();
+                Report existingReport = entry.getValue();
+                LatLng existingPosition = new LatLng(existingReport.getLatitude(), existingReport.getLongitude());
 
                 float[] results = new float[1];
                 Location.distanceBetween(newPosition.latitude, newPosition.longitude, existingPosition.latitude, existingPosition.longitude, results);
@@ -298,6 +299,7 @@ public class WeatherMapFragment extends Fragment implements OnMapReadyCallback {
 
                 if (distanceInMeters < 500) {
                     markerToRemove = existingMarker;
+                    deleteReport(existingReport);
                     break;
                 }
             }
@@ -312,8 +314,32 @@ public class WeatherMapFragment extends Fragment implements OnMapReadyCallback {
                     .position(newPosition)
                     .title(report.getWeatherType().getName())
                     .icon(resizeMapIcons(report.getWeatherType().getIcon(), 100, 100)));
-            markers.put(newMarker, newPosition);
+            markers.put(newMarker, report);
         }
+    }
+
+    private void deleteReport(Report report) {
+        ReportService service = null;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            service = RetrofitClientInstance.getRetrofitInstance().create(ReportService.class);
+        }
+        Log.d("tutu", "Id du report : " + report.getId());
+        Call<Void> call = service.deleteReport(report.getId());
+        call.enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                if (response.isSuccessful()) {
+                    Log.d("tutu", "Report deleted successfully");
+                } else {
+                    Log.e("tutu", "Failed to delete report, response code: " + response.code());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                Log.e("tutu", "Network error while deleting report", t);
+            }
+        });
     }
 
     private int getIconResourceId(String icon) {
