@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -41,12 +42,15 @@ import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MapStyleOptions;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -158,7 +162,9 @@ public class WeatherMapFragment extends Fragment implements OnMapReadyCallback {
                 WeatherType selectedType = adapter.getSelectedWeatherType();
                 String pseudo = editTextPseudo.getText().toString();
                 int temperature = numberPickerTemperature.getValue() + minValue;
-                addMarker(selectedType, pseudo, temperature);
+                Report report = new Report(latitude, longitude, temperature, pseudo, selectedType);
+                addMarker(report);
+                postReportToAPI(report);
                 dialog.dismiss();
             });
 
@@ -168,22 +174,6 @@ public class WeatherMapFragment extends Fragment implements OnMapReadyCallback {
         });
 
         dialog.show();
-    }
-
-    private void addMarker(WeatherType selectedType, String pseudo, int temperature) {
-        if (googleMap != null && selectedType != null) {
-            LatLng location = new LatLng(latitude, longitude);
-            googleMap.addMarker(new MarkerOptions()
-                    .position(location)
-                    .icon(resizeMapIcons(selectedType.getIcon(), 100, 100)));
-
-            Report report = null;
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                report = new Report(latitude, longitude, temperature, pseudo, selectedType);
-            }
-
-            postReportToAPI(report);
-        }
     }
 
     private void postReportToAPI(Report report) {
@@ -236,8 +226,10 @@ public class WeatherMapFragment extends Fragment implements OnMapReadyCallback {
 
                     reports = response.body();
 
-                    if(reports != null){
-                        addMarkers(reports);
+                    if(isMapReady && reports != null){
+                        for(Report report: reports){
+                            addMarker(report);
+                        }
                     }
 
                 } else {
@@ -283,23 +275,44 @@ public class WeatherMapFragment extends Fragment implements OnMapReadyCallback {
         googleMap.getUiSettings().setZoomGesturesEnabled(false);
 
         if (reports != null){
-            addMarkers(reports);
+            for(Report report: reports){
+                addMarker(report);
+            }
         }
-
-
     }
 
-    private void addMarkers(List<Report> reports) {
-        if(googleMap != null && isMapReady){
-            for(Report report: reports){
-                LatLng position = new LatLng(report.getLatitude(), report.getLongitude());
-                googleMap.addMarker(new MarkerOptions()
-                        .position(position)
-                        .title(report.getWeatherType().getName())
-                        .icon(resizeMapIcons(report.getWeatherType().getIcon(), 100, 100)));
+    private Map<Marker, LatLng> markers = new HashMap<>();
+
+    private void addMarker(Report report) {
+        if (googleMap != null && report.getWeatherType() != null) {
+            LatLng newPosition = new LatLng(report.getLatitude(), report.getLongitude());
+            Marker markerToRemove = null;
+
+            for(Map.Entry<Marker, LatLng> entry : markers.entrySet()){
+                Marker existingMarker = entry.getKey();
+                LatLng existingPosition = entry.getValue();
+
+                float[] results = new float[1];
+                Location.distanceBetween(newPosition.latitude, newPosition.longitude, existingPosition.latitude, existingPosition.longitude, results);
+                float distanceInMeters = results[0];
+
+                if (distanceInMeters < 500) {
+                    markerToRemove = existingMarker;
+                    break;
+                }
             }
-        }else{
-            Log.d("tutu", "Map is not ready yet");
+
+            if (markerToRemove != null) {
+                markerToRemove.remove();
+                markers.remove(markerToRemove);
+            }
+
+
+            Marker newMarker = googleMap.addMarker(new MarkerOptions()
+                    .position(newPosition)
+                    .title(report.getWeatherType().getName())
+                    .icon(resizeMapIcons(report.getWeatherType().getIcon(), 100, 100)));
+            markers.put(newMarker, newPosition);
         }
     }
 
