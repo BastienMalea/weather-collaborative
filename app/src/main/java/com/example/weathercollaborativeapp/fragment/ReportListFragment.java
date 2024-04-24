@@ -74,6 +74,15 @@ public class ReportListFragment extends Fragment {
 
         return view;
     }
+
+    @Override
+    public void onResume() {
+
+        Log.d("tutu", "OnResume");
+        super.onResume();
+        fetchReports(latitude, longitude, seekBarRadius.getProgress() + 1);
+    }
+
     private void setupButtonSort() {
         buttonSort.setOnClickListener(new View.OnClickListener(){
 

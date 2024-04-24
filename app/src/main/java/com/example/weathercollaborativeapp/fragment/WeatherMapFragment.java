@@ -313,6 +313,7 @@ public class WeatherMapFragment extends Fragment implements OnMapReadyCallback {
             Marker newMarker = googleMap.addMarker(new MarkerOptions()
                     .position(newPosition)
                     .title(report.getWeatherType().getName())
+                    .snippet(report.getTemperature() + " °C posté par " + report.getUsername())
                     .icon(resizeMapIcons(report.getWeatherType().getIcon(), 100, 100)));
             markers.put(newMarker, report);
         }
