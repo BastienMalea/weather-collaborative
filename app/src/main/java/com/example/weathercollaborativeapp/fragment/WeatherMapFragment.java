@@ -175,7 +175,7 @@ public class WeatherMapFragment extends Fragment implements OnMapReadyCallback {
             LatLng location = new LatLng(latitude, longitude);
             googleMap.addMarker(new MarkerOptions()
                     .position(location)
-                    .icon(BitmapDescriptorFactory.fromResource(WeatherIconUtils.getIconResourceId(selectedType.getIcon()))));
+                    .icon(resizeMapIcons(selectedType.getIcon(), 100, 100)));
 
             Report report = null;
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
@@ -183,9 +183,6 @@ public class WeatherMapFragment extends Fragment implements OnMapReadyCallback {
             }
 
             postReportToAPI(report);
-            Log.d("tutu", "Temperature" + report.getTemperature());
-            Log.d("tutu", "WeatherType" + report.getWeatherType().getName());
-            Log.d("tutu", "Pseudo" + report.getUsername());
         }
     }
 
@@ -281,7 +278,7 @@ public class WeatherMapFragment extends Fragment implements OnMapReadyCallback {
 
         LatLng location = new LatLng(latitude, longitude);
         googleMap.addMarker(new MarkerOptions().position(location).title("Clermont-Ferrand"));
-        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(location, 11));
+        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(location, 13));
         googleMap.getUiSettings().setAllGesturesEnabled(false);
         googleMap.getUiSettings().setZoomGesturesEnabled(false);
 
