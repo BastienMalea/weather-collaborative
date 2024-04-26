@@ -52,7 +52,6 @@ public class ReportAdapter extends RecyclerView.Adapter<ReportAdapter.ReportView
     }
 
     public void updateReports(List<Report> newReports) {
-        Log.d("tutu", "isReversed : " + isReversed);
         if(isReversed){
             Collections.reverse(newReports);
         }

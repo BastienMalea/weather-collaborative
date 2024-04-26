@@ -67,7 +67,6 @@ public class ReportListFragment extends Fragment {
         locationViewModel.getUserLocation().observe(getViewLifecycleOwner(), newLocation -> {
             latitude = newLocation.latitude;
             longitude = newLocation.longitude;
-            Log.d("tutu", "Nouvelle localisation reçue: " + latitude + " longitude : " + longitude);
             fetchReports(latitude, longitude, seekBarRadius.getProgress() + 1);
         });
 
@@ -78,7 +77,6 @@ public class ReportListFragment extends Fragment {
     @Override
     public void onResume() {
 
-        Log.d("tutu", "OnResume");
         super.onResume();
         fetchReports(latitude, longitude, seekBarRadius.getProgress() + 1);
     }
@@ -140,7 +138,6 @@ public class ReportListFragment extends Fragment {
             @Override
             public void onFailure(Call<List<Report>> call, Throwable throwable) {
                 Log.d("tutu", "Network error", throwable);
-                Toast.makeText(getContext(), "Network error", Toast.LENGTH_LONG).show();
             }
 
         });

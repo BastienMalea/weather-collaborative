@@ -65,7 +65,7 @@ public class WeatherMapFragment extends Fragment implements OnMapReadyCallback {
     List<Report> reports = new ArrayList<>();
     private boolean isMapReady = false;
     private Button addButton;
-
+    private Map<Long, Marker> markerMap = new HashMap<>();
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -81,21 +81,25 @@ public class WeatherMapFragment extends Fragment implements OnMapReadyCallback {
             mapFragment.getMapAsync(this);
         }
 
-        locationViewModel.getUserLocation().observe(getViewLifecycleOwner(), newLocation -> {
-            latitude = newLocation.latitude;
-            longitude = newLocation.longitude;
-            Log.d("tutu", "Nouvelle localisation reçue: " + latitude + " longitude : " + longitude);
-            setMarkersOnMap(latitude, longitude, 100);
-        });
-
-        addButton = view.findViewById(R.id.add_marker_button);
+          addButton = view.findViewById(R.id.add_marker_button);
         addButton.setOnClickListener(v -> fetchAndDisplayWeatherTypes());
 
         return view;
     }
 
+    @Override
+    public void onResume() {
+        Log.d("tutu", "onResume");
+        super.onResume();
+        locationViewModel.getUserLocation().observe(getViewLifecycleOwner(), newLocation -> {
+            latitude = newLocation.latitude;
+            longitude = newLocation.longitude;
+
+            setMarkersOnMap(latitude, longitude, 100);
+        });
+    }
+
     private void fetchAndDisplayWeatherTypes() {
-        Log.d("tutu", "Click sur le boutond ajout ");
         WeatherService service = null;
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             service = RetrofitClientInstance.getRetrofitInstance().create(WeatherService.class);
@@ -107,8 +111,6 @@ public class WeatherMapFragment extends Fragment implements OnMapReadyCallback {
             @Override
             public void onResponse(Call<List<WeatherType>> call, Response<List<WeatherType>> response) {
                 if (response.isSuccessful()) {
-                    Log.d("tutu", "Recupere la liste des weatherType");
-
                     List<WeatherType> weatherTypes = response.body();
                     showWeatherTypesPopup(weatherTypes);
                 } else {
@@ -161,10 +163,17 @@ public class WeatherMapFragment extends Fragment implements OnMapReadyCallback {
             addButton.setOnClickListener(v -> {
                 WeatherType selectedType = adapter.getSelectedWeatherType();
                 String pseudo = editTextPseudo.getText().toString();
+                if(pseudo == null || pseudo.isEmpty()){
+                    pseudo = "Anonyme";
+                }
+
                 int temperature = numberPickerTemperature.getValue() + minValue;
                 Report report = new Report(latitude, longitude, temperature, pseudo, selectedType);
-                addMarker(report);
                 postReportToAPI(report);
+                addMarker(report);
+                Log.d("tutu", "Ajout report :");
+                setMarkersOnMap(latitude, longitude, 100);
+
                 dialog.dismiss();
             });
 
@@ -187,6 +196,7 @@ public class WeatherMapFragment extends Fragment implements OnMapReadyCallback {
             public void onResponse(Call<Report> call, Response<Report> response) {
                 if (response.isSuccessful()) {
                     Toast.makeText(getContext(), "Report ajouté avec succès", Toast.LENGTH_SHORT).show();
+                    reports.add(report);
                 } else {
                     Log.e("tutu", "Failed with response code: " + response.code());
                     String errorBody = null;
@@ -207,34 +217,39 @@ public class WeatherMapFragment extends Fragment implements OnMapReadyCallback {
         });
     }
     private void setMarkersOnMap(double latitude, double longitude, int radius) {
-        Log.d("tutu", "Passage setMarkersonMap : " + latitude + longitude);
+        reports.clear();
+        clearMarkerMap();
         ReportService apiService = null;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             apiService = RetrofitClientInstance.getRetrofitInstance().create(ReportService.class);
         }
 
         assert apiService != null;
-        Log.d("tutu", "Call API");
-
         Call<List<Report>> call = apiService.getNearbyReports(latitude, longitude, radius);
 
         call.enqueue(new Callback<List<Report>>() {
             @Override
             public void onResponse(Call<List<Report>> call, Response<List<Report>> response) {
                 if (response.isSuccessful()) {
-                    Log.d("tutu", "Reponses Successfull" + response.body());
-
                     reports = response.body();
 
+                    for(Report report : reports){
+                        Log.d("tutu", "Report : " + report.getUsername() + " WeatherType : " + report.getWeatherType() + " Température : " + report.getTemperature());
+                    }
+
+                    for(Marker report : markerMap.values()){
+                        Log.d("tutu", "Markers : " + report.getSnippet() + " Id : " + report.getId());
+                    }
+
                     if(isMapReady && reports != null){
-                        for(Report report: reports){
-                            addMarker(report);
-                        }
+                        addMarkers(reports);
+                    }
+
+                    for(Marker report : markerMap.values()){
+                        Log.d("tutu", "V2Markers : " + report.getSnippet() + " Id : " + report.getId());
                     }
 
                 } else {
-                    Log.d("tutu", "Fail");
-
                     Toast.makeText(getContext(), "Error fetching reports", Toast.LENGTH_LONG).show();
                 }
             }
@@ -242,20 +257,84 @@ public class WeatherMapFragment extends Fragment implements OnMapReadyCallback {
             @Override
             public void onFailure(Call<List<Report>> call, Throwable throwable) {
                 Log.d("tutu", "Network error", throwable);
-                Toast.makeText(getContext(), "Network error", Toast.LENGTH_LONG).show();
             }
 
         });
 
     }
 
+    private void clearMarkerMap() {
+        for (Marker marker : markerMap.values()) {
+            marker.remove();  // Supprime chaque marker de la carte
+        }
+        markerMap.clear();
+    }
+
+    private void addMarkers(List<Report> reports) {
+        if(googleMap != null){
+            for(Report report: reports){
+                Marker existingMarker = markerMap.get(report.getId());
+                if (existingMarker != null) {
+                    existingMarker.setPosition(new LatLng(report.getLatitude(), report.getLongitude()));
+                    existingMarker.setTitle(report.getWeatherType().getName());
+                    existingMarker.setSnippet(report.getTemperature() + " °C posté par " + report.getUsername());
+                    existingMarker.setIcon(resizeMapIcons(report.getWeatherType().getIcon(), 100, 100));
+                } else {
+                    Marker newMarker = googleMap.addMarker(new MarkerOptions()
+                            .position(new LatLng(report.getLatitude(), report.getLongitude()))
+                            .title(report.getWeatherType().getName())
+                            .snippet(report.getTemperature() + " °C posté par " + report.getUsername())
+                            .icon(resizeMapIcons(report.getWeatherType().getIcon(), 100, 100)));
+                    markerMap.put(report.getId(), newMarker);
+                }
+            }
+        }
+    }
+
+    private void addMarker(Report report) {
+
+        LatLng newPosition = new LatLng(report.getLatitude(), report.getLongitude());
+        if(googleMap != null && report.getWeatherType() != null){
+            boolean isNearExistingMarker = false;
+
+            // Vérifier d'abord s'il existe déjà un marker à proximité
+            for(Report comparedReport : reports){
+                LatLng existingPosition = new LatLng(comparedReport.getLatitude(), comparedReport.getLongitude());
+                float[] results = new float[1];
+                Location.distanceBetween(newPosition.latitude, newPosition.longitude, existingPosition.latitude, existingPosition.longitude, results);
+                float distanceInMeters = results[0];
+
+                if (distanceInMeters < 200 && comparedReport.getId() != report.getId()){
+                    deleteReport(comparedReport);
+                    Marker markerToRemove = markerMap.get(comparedReport.getId());
+                    if (markerToRemove != null) {
+                        markerToRemove.remove();
+                        markerMap.remove(comparedReport.getId());
+                        reports.remove(comparedReport);
+                        isNearExistingMarker = true;
+                        Log.d("tutu", "Delete marker from map and report list");
+                    }
+                    break;
+                }
+            }
+                Marker newMarker = googleMap.addMarker(new MarkerOptions()
+                        .position(newPosition)
+                        .title(report.getWeatherType().getName())
+                        .snippet(report.getTemperature() + " °C posté par " + report.getUsername())
+                        .icon(resizeMapIcons(report.getWeatherType().getIcon(), 100, 100)));
+                markerMap.put(report.getId(), newMarker);
+                reports.add(report);
+        }
+
+    }
+
     @Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
-
+        Log.d("tutu", "OnMapReady");
         this.googleMap = googleMap;
         isMapReady = true;
 
-        try{
+        try {
             boolean success = googleMap.setMapStyle(
                     MapStyleOptions.loadRawResourceStyle(
                             getContext(), R.raw.map_style)
@@ -264,58 +343,18 @@ public class WeatherMapFragment extends Fragment implements OnMapReadyCallback {
             if (!success) {
                 Log.d("tutu", "Style parsing failed.");
             }
-        }catch (Resources.NotFoundException e){
+        } catch (Resources.NotFoundException e) {
             Log.d("tutu", "Can't find style. Error: ", e);
         }
 
         LatLng location = new LatLng(latitude, longitude);
         googleMap.addMarker(new MarkerOptions().position(location).title("Clermont-Ferrand"));
-        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(location, 13));
+        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(location, 10));
         googleMap.getUiSettings().setAllGesturesEnabled(false);
         googleMap.getUiSettings().setZoomGesturesEnabled(false);
 
-        if (reports != null){
-            for(Report report: reports){
-                addMarker(report);
-            }
-        }
-    }
-
-    private Map<Marker, Report> markers = new HashMap<>();
-
-    private void addMarker(Report report) {
-        if (googleMap != null && report.getWeatherType() != null) {
-            LatLng newPosition = new LatLng(report.getLatitude(), report.getLongitude());
-            Marker markerToRemove = null;
-
-            for(Map.Entry<Marker, Report> entry : markers.entrySet()){
-                Marker existingMarker = entry.getKey();
-                Report existingReport = entry.getValue();
-                LatLng existingPosition = new LatLng(existingReport.getLatitude(), existingReport.getLongitude());
-
-                float[] results = new float[1];
-                Location.distanceBetween(newPosition.latitude, newPosition.longitude, existingPosition.latitude, existingPosition.longitude, results);
-                float distanceInMeters = results[0];
-
-                if (distanceInMeters < 500) {
-                    markerToRemove = existingMarker;
-                    deleteReport(existingReport);
-                    break;
-                }
-            }
-
-            if (markerToRemove != null) {
-                markerToRemove.remove();
-                markers.remove(markerToRemove);
-            }
-
-
-            Marker newMarker = googleMap.addMarker(new MarkerOptions()
-                    .position(newPosition)
-                    .title(report.getWeatherType().getName())
-                    .snippet(report.getTemperature() + " °C posté par " + report.getUsername())
-                    .icon(resizeMapIcons(report.getWeatherType().getIcon(), 100, 100)));
-            markers.put(newMarker, report);
+        if (reports != null) {
+            addMarkers(reports);
         }
     }
 
@@ -324,7 +363,6 @@ public class WeatherMapFragment extends Fragment implements OnMapReadyCallback {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             service = RetrofitClientInstance.getRetrofitInstance().create(ReportService.class);
         }
-        Log.d("tutu", "Id du report : " + report.getId());
         Call<Void> call = service.deleteReport(report.getId());
         call.enqueue(new Callback<Void>() {
             @Override

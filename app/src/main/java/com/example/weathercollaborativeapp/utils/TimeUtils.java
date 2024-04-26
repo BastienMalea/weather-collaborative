@@ -16,18 +16,10 @@ public class TimeUtils {
     public static String getRelativeTime(LocalDateTime createdAt) {
         LocalDateTime now = LocalDateTime.now(ZoneId.of("UTC")).plusHours(1);
 
-        Log.d("tutu", "Now : " + now);
         long seconds = ChronoUnit.SECONDS.between(createdAt, now);
         long minutes = ChronoUnit.MINUTES.between(createdAt, now);
         long hours = ChronoUnit.HOURS.between(createdAt, now);
         long days = ChronoUnit.DAYS.between(createdAt, now);
-
-        Log.d("tutu", "CreatedAt : " + createdAt);
-        Log.d("tutu", "seconds : " + seconds);
-        Log.d("tutu", "minutes : " + minutes);
-        Log.d("tutu", "hours : " + hours);
-        Log.d("tutu", "days : " + days);
-
 
         if (seconds < 60) {
             return "Il y a " + seconds + " s";
