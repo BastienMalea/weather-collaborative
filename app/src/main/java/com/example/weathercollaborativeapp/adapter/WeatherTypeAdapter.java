@@ -59,6 +59,9 @@ public class WeatherTypeAdapter extends RecyclerView.Adapter<WeatherTypeAdapter.
             }
         });
 
+        holder.itemView.setSelected(position == selectedPosition);
+        holder.checkMarkIcon.setVisibility(position == selectedPosition ? View.VISIBLE : View.GONE);
+
     }
     @Override
     public int getItemCount() {
@@ -80,10 +83,13 @@ public class WeatherTypeAdapter extends RecyclerView.Adapter<WeatherTypeAdapter.
         public ImageView weatherIcon;
         public TextView weatherName;
 
+        public ImageView checkMarkIcon;
+
         public ViewHolder(View view) {
             super(view);
             weatherIcon = view.findViewById(R.id.imageViewWeatherIcon);
             weatherName = view.findViewById(R.id.textViewWeatherType);
+            checkMarkIcon = view.findViewById(R.id.imageViewCheckmark);
         }
     }
 }

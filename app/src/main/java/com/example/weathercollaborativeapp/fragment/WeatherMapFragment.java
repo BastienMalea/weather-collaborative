@@ -265,7 +265,7 @@ public class WeatherMapFragment extends Fragment implements OnMapReadyCallback {
 
     private void clearMarkerMap() {
         for (Marker marker : markerMap.values()) {
-            marker.remove();  // Supprime chaque marker de la carte
+            marker.remove();
         }
         markerMap.clear();
     }
@@ -295,9 +295,7 @@ public class WeatherMapFragment extends Fragment implements OnMapReadyCallback {
 
         LatLng newPosition = new LatLng(report.getLatitude(), report.getLongitude());
         if(googleMap != null && report.getWeatherType() != null){
-            boolean isNearExistingMarker = false;
 
-            // Vérifier d'abord s'il existe déjà un marker à proximité
             for(Report comparedReport : reports){
                 LatLng existingPosition = new LatLng(comparedReport.getLatitude(), comparedReport.getLongitude());
                 float[] results = new float[1];
@@ -311,8 +309,8 @@ public class WeatherMapFragment extends Fragment implements OnMapReadyCallback {
                         markerToRemove.remove();
                         markerMap.remove(comparedReport.getId());
                         reports.remove(comparedReport);
-                        isNearExistingMarker = true;
                         Log.d("tutu", "Delete marker from map and report list");
+                        Log.d("tutu", "Report Deleted :  " + comparedReport.getUsername() + " Weather Type : " + comparedReport.getWeatherType() + " Id : " + comparedReport.getId());
                     }
                     break;
                 }
