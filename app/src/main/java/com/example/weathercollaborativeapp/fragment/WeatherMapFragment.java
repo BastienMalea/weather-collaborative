@@ -7,6 +7,7 @@ import android.graphics.BitmapFactory;
 import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -66,6 +67,9 @@ public class WeatherMapFragment extends Fragment implements OnMapReadyCallback {
     private boolean isMapReady = false;
     private Button addButton;
     private Map<Long, Marker> markerMap = new HashMap<>();
+
+    private Handler handler = new Handler();
+    private Runnable updateMapCenter;
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -81,7 +85,7 @@ public class WeatherMapFragment extends Fragment implements OnMapReadyCallback {
             mapFragment.getMapAsync(this);
         }
 
-          addButton = view.findViewById(R.id.add_marker_button);
+        addButton = view.findViewById(R.id.add_marker_button);
         addButton.setOnClickListener(v -> fetchAndDisplayWeatherTypes());
 
         return view;
@@ -95,8 +99,44 @@ public class WeatherMapFragment extends Fragment implements OnMapReadyCallback {
             latitude = newLocation.latitude;
             longitude = newLocation.longitude;
 
+            if (googleMap != null) {
+                LatLng location = new LatLng(latitude, longitude);
+                googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(location, 10));
+            }
+
             setMarkersOnMap(latitude, longitude, 100);
         });
+
+       startMapCentering();
+
+    }
+
+    @Override
+    public void onPause(){
+        super.onPause();
+        stopMapCentering();
+    }
+
+    private void stopMapCentering() {
+        handler.removeCallbacks(updateMapCenter);
+    }
+
+    private void startMapCentering() {
+        updateMapCenter = new Runnable() {
+            @Override
+            public void run() {
+                if (googleMap != null) {
+                    LatLng currentLocation = getCurrentLocation();
+                    googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 10));
+                }
+                handler.postDelayed(this, 15000);
+            }
+        };
+        handler.postDelayed(updateMapCenter, 15000);
+    }
+
+    private LatLng getCurrentLocation() {
+        return new LatLng(latitude, longitude);
     }
 
     private void fetchAndDisplayWeatherTypes() {
